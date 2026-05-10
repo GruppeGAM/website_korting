@@ -347,6 +347,7 @@ footer .footer-sep {
   background-color: var(--color-primary);
   padding: 0;
   text-align: center;
+  border-bottom: 3px solid var(--color-gold);
 }
 
 .portrait-img {
