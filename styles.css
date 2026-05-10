@@ -112,8 +112,9 @@ nav {
 
 /* --- Hero -------------------------------------------------- */
 #hero {
-  background-color: var(--color-primary);
-  padding: 5rem 1.5rem 4rem;
+  background-color: #ffffff;
+  border-bottom: 3px solid var(--color-gold);
+  padding: 4rem 1.5rem 3.5rem;
   text-align: center;
 }
 
@@ -129,7 +130,7 @@ nav {
 
 .hero-name {
   font-size: 2.4rem;
-  color: #f0ebe0;
+  color: var(--color-primary);
   letter-spacing: 0.03em;
   margin-bottom: 0.4rem;
   font-weight: 700;
@@ -137,7 +138,7 @@ nav {
 
 .hero-title {
   font-size: 1.1rem;
-  color: var(--color-gold-light);
+  color: var(--color-gold);
   letter-spacing: 0.15em;
   font-style: italic;
   margin-bottom: 0;
@@ -149,7 +150,7 @@ nav {
   height: 1px;
   background: var(--color-gold);
   margin: 1.8rem auto 0;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 /* --- Sektionen allgemein ----------------------------------- */
@@ -164,14 +165,22 @@ section {
 
 /* --- Tätigkeitsschwerpunkte -------------------------------- */
 #taetigkeiten {
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-primary);
+}
+
+#taetigkeiten .section-title {
+  color: #f0ebe0;
+}
+
+#taetigkeiten .section-title::after {
+  background: var(--color-gold);
 }
 
 .intro-text {
   text-align: center;
   max-width: 640px;
   margin: 0 auto 2.5rem;
-  color: var(--color-text-muted);
+  color: #c8c0ae;
   font-size: 0.95rem;
 }
 
@@ -187,9 +196,9 @@ section {
   align-items: flex-start;
   gap: 1rem;
   padding: 0.9rem 0;
-  border-bottom: 1px solid #e5dfd6;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 1rem;
-  color: var(--color-text);
+  color: #e8e2d6;
 }
 
 .taetigkeiten-liste li:last-child {
@@ -198,10 +207,81 @@ section {
 
 .taetigkeiten-liste li::before {
   content: '◆';
-  color: var(--color-gold);
+  color: var(--color-gold-light);
   font-size: 0.6rem;
   margin-top: 0.5rem;
   flex-shrink: 0;
+}
+
+/* --- Kontakt ---------------------------------------------- */
+#kontakt {
+  background-color: var(--color-bg-alt);
+}
+
+.kontakt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.kontakt-card {
+  background-color: var(--color-bg);
+  border-top: 3px solid var(--color-gold);
+  padding: 1.75rem 1.5rem;
+}
+
+.kontakt-card h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.kontakt-card p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+}
+
+.kontakt-card p:last-child {
+  margin-bottom: 0;
+}
+
+.kontakt-card a {
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-gold);
+  padding-bottom: 1px;
+  transition: color 0.2s;
+}
+
+.kontakt-card a:hover {
+  color: var(--color-gold);
+}
+
+.kontakt-label {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kontakt-hinweis {
+  font-style: italic;
+  color: var(--color-gold) !important;
+  font-size: 0.85rem !important;
+}
+
+@media (max-width: 768px) {
+  .kontakt-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
 }
 
 /* --- Datenschutz ------------------------------------------ */
