@@ -334,7 +334,6 @@ section {
 /* --- CTA --------------------------------------------------- */
 #cta {
   background-color: var(--color-primary);
-  border-top: 3px solid var(--color-gold);
   border-bottom: 3px solid var(--color-gold);
 }
 
