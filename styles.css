@@ -163,6 +163,27 @@ section {
   margin: 0 auto;
 }
 
+/* --- Willkommen ------------------------------------------- */
+#willkommen {
+  background-color: var(--color-bg-alt);
+}
+
+.willkommen-inner {
+  max-width: 700px;
+  text-align: center;
+}
+
+.willkommen-inner p {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  line-height: 1.9;
+  margin-bottom: 1rem;
+}
+
+.willkommen-inner p:last-child {
+  margin-bottom: 0;
+}
+
 /* --- Tätigkeitsschwerpunkte -------------------------------- */
 #taetigkeiten {
   background-color: var(--color-primary);
@@ -308,6 +329,46 @@ section {
   color: var(--color-text-muted);
   line-height: 1.75;
   margin-bottom: 0.5rem;
+}
+
+/* --- CTA --------------------------------------------------- */
+#cta {
+  background-color: var(--color-primary);
+  border-top: 3px solid var(--color-gold);
+  border-bottom: 3px solid var(--color-gold);
+}
+
+.cta-inner {
+  text-align: center;
+}
+
+#cta h2 {
+  color: #f0ebe0;
+  font-size: 1.8rem;
+  margin-bottom: 0.75rem;
+}
+
+#cta h2::after {
+  display: none;
+}
+
+#cta p {
+  color: #c8c0ae;
+  font-size: 1rem;
+  line-height: 1.8;
+  margin-bottom: 0;
+}
+
+#cta a {
+  color: var(--color-gold-light);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-gold);
+  padding-bottom: 1px;
+  transition: color 0.2s;
+}
+
+#cta a:hover {
+  color: #f0d060;
 }
 
 /* --- Footer ----------------------------------------------- */
