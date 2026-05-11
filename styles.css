@@ -156,6 +156,17 @@ nav {
 /* --- Sektionen allgemein ----------------------------------- */
 section {
   padding: var(--section-padding);
+  scroll-margin-top: 50px; /* Sticky-Nav-Höhe ausgleichen */
+}
+
+/* Hero ganz oben – keine Verschiebung */
+#hero {
+  scroll-margin-top: 0;
+}
+
+/* Portrait-Block ebenfalls korrigieren */
+#portrait {
+  scroll-margin-top: 50px;
 }
 
 .section-inner {
