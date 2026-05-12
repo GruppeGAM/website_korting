@@ -114,7 +114,7 @@ nav {
 #hero {
   background-color: #ffffff;
   border-bottom: 3px solid var(--color-gold);
-  scroll-margin-top: 0;
+  scroll-margin-top: 50px;
 }
 
 .intro-grid {
@@ -223,6 +223,7 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 0;
+  scroll-margin-top: 50px;
 }
 
 .intro-cards .kontakt-card {
@@ -255,11 +256,6 @@ nav {
 section {
   padding: var(--section-padding);
   scroll-margin-top: 50px; /* Sticky-Nav-Höhe ausgleichen */
-}
-
-/* Hero ganz oben – keine Verschiebung */
-#hero {
-  scroll-margin-top: 0;
 }
 
 /* Portrait-Block ebenfalls korrigieren */
