@@ -30,9 +30,32 @@ jobs:
           KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
         run: |
           install -d -m 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # Windows-Zeilenenden und Leerzeichen am Zeilenrand entfernen (häufig beim Einfügen)
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      # Host-Keys müssen zu den vom Server-Admin genannten Fingerabdrücken passen
+      - name: Known Hosts prüfen
+        run: |
+          expected="SHA256:eRVj0M5qNfXXJPMRRrawKVafCiDD1olIsTMpLJiFtks
+          SHA256:/scjhY14eEHWk7f7r2mLqjAf3m2RKw0R/cdMjwvHOUo
+          SHA256:dkB1/t+DosGwdedBPepojh4FyDD/zvrHWA3DiWJDsh4"
+          lines=$(grep -c . ~/.ssh/known_hosts || true)
+          found=$(ssh-keygen -lf ~/.ssh/known_hosts 2>/dev/null || true)
+          if [ -z "$found" ]; then
+            echo "::error::STAGING_KNOWN_HOSTS enthält keinen gültigen Host-Key ($lines Zeilen). Erwartet wird die Ausgabe von 'ssh-keyscan container.ga-cms.de', nicht die SHA256-Fingerabdrücke."
+            exit 1
+          fi
+          echo "::notice::STAGING_KNOWN_HOSTS: $(echo "$found" | awk '{print $NF, $2, $3}' | paste -sd ';' -)"
+          if ! ssh-keygen -F container.ga-cms.de -f ~/.ssh/known_hosts >/dev/null; then
+            echo "::error::STAGING_KNOWN_HOSTS enthält keinen Eintrag für den Host 'container.ga-cms.de'."
+            exit 1
+          fi
+          for fp in $expected; do
+            echo "$found" | grep -qF "$fp" || { echo "::error::Fingerabdruck $fp fehlt in STAGING_KNOWN_HOSTS."; exit 1; }
+          done
+          echo "Host-Keys OK"
 
       # Server hat rsync 3.1.3: keine Optionen ab 3.2 (z. B. --mkpath) verwenden
       - name: Deploy nach container.ga-cms.de
