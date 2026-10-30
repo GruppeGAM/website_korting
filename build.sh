@@ -8,5 +8,5 @@ OUT="${1:-_site}"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 cp index.html styles.css impressum.html datenschutz.html "$OUT"/
-cp -R images "$OUT"/
+cp -R images fonts "$OUT"/
 echo "Build fertig: $OUT"
