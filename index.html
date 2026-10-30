@@ -29,6 +29,7 @@
       <a href="#willkommen">Willkommen</a>
       <a href="#taetigkeiten">Tätigkeiten</a>
       <a href="#kontakt">Kontakt</a>
+      <a href="#anfahrt">Anfahrt</a>
     </div>
   </nav>
 
@@ -55,8 +56,12 @@
             <p>
               Hans-Jörg Korting<br>
               Rechtsanwalt &amp; Notar a.D.<br>
-              Südlicher Stadtgraben 13<br>
-              73430 Aalen
+              Ulmer Straße 124<br>
+              im WiZ, 3. Etage<br>
+              73431 Aalen
+            </p>
+            <p>
+              <a href="#anfahrt">Wegbeschreibung &rarr;</a>
             </p>
           </div>
           <div class="kontakt-card">
@@ -67,8 +72,7 @@
             </p>
             <p>
               <span class="kontakt-label">E-Mail</span><br>
-              <a href="mailto:info@anwaelte-aalen.de">info@anwaelte-aalen.de</a><br>
-              <a href="mailto:Rechtsanwalt.korting@web.de">rechtsanwalt.korting@web.de</a>
+              <a href="mailto:info@anwaelte-aalen.de">info@anwaelte-aalen.de</a>
             </p>
           </div>
           <div class="kontakt-card">
@@ -131,7 +135,7 @@
   ====================================================== -->
   <section id="taetigkeiten" aria-labelledby="taetigkeiten-heading">
     <div class="section-inner">
-      <h2 id="taetigkeiten-heading" class="section-title">Tätigkeitsschwerpunkte</h2>
+      <h2 id="taetigkeiten-heading" class="section-title">Tätigkeits&shy;schwerpunkte</h2>
       <p class="intro-text">
         Mit langjähriger Erfahrung berate und vertrete ich Sie kompetent und
         vertrauensvoll in folgenden Rechtsbereichen:
@@ -143,6 +147,62 @@
         <li>Streitschlichtung und Mediation</li>
         <li>Zugelassen bei allen Land- und Oberlandesgerichten</li>
       </ul>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       ANFAHRT
+  ====================================================== -->
+  <section id="anfahrt" aria-labelledby="anfahrt-heading">
+    <div class="section-inner">
+      <h2 id="anfahrt-heading" class="section-title">So finden Sie uns</h2>
+      <div class="anfahrt-grid">
+        <div class="anfahrt-text">
+          <p class="anfahrt-adresse">
+            Ulmer Straße 124<br>
+            im WiZ, 3. Etage<br>
+            73431 Aalen
+          </p>
+          <p>
+            Bitte fahren Sie mit dem Aufzug in den 3. Stock. Dort angekommen,
+            gehen Sie rechts. Unser Büro befindet sich im vorletzten Zimmer
+            auf der linken Seite.
+          </p>
+          <p>
+            Gerne holen wir Sie auch direkt an der Eingangstür oder beim Aufzug ab.
+            Geben Sie uns hierfür einfach kurz Bescheid:
+            <a href="tel:+4973615695">07361 &ndash; 56950</a>
+          </p>
+        </div>
+        <figure class="anfahrt-foto">
+          <img
+            src="images/wiz-gebaeude.jpg"
+            alt="Bürogebäude Ulmer Straße 124 in Aalen"
+            width="1000" height="755" loading="lazy"
+          >
+        </figure>
+      </div>
+
+      <!-- Statische Karte (lokal gespeichert, keine externen Anfragen beim Seitenaufruf).
+           Ein Klick öffnet die Karten-App, siehe Script unten. -->
+      <figure class="anfahrt-karte">
+        <a
+          id="karte-link"
+          href="https://www.openstreetmap.org/?mlat=48.82973&amp;mlon=10.10887#map=18/48.82973/10.10887"
+          target="_blank" rel="noopener"
+        >
+          <img
+            src="images/karte-anfahrt.jpg"
+            alt="Kartenausschnitt mit Markierung: Ulmer Straße 124, Aalen"
+            width="900" height="520" loading="lazy"
+          >
+          <span class="karte-hinweis">In Karten-App öffnen &#8599;</span>
+        </a>
+        <figcaption>
+          Kartendaten &copy;
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a>
+        </figcaption>
+      </figure>
     </div>
   </section>
 
@@ -166,7 +226,7 @@
   <footer>
     <p>
       Hans-Jörg Korting &nbsp;|&nbsp; Rechtsanwalt &amp; Notar a.D.<br>
-      Südlicher Stadtgraben 13&nbsp;&nbsp;·&nbsp;&nbsp;73430 Aalen
+      Ulmer Straße 124 (WiZ, 3. Etage)&nbsp;&nbsp;·&nbsp;&nbsp;73431 Aalen
     </p>
     <p>
       <a href="impressum.html">Impressum</a>
@@ -175,6 +235,22 @@
     </p>
     <p>&copy; <span id="year">2026</span> Hans-Jörg Korting</p>
   </footer>
+
+  <script>
+    // Karte: auf Smartphones die passende Karten-App öffnen, sonst openstreetmap.org
+    (function () {
+      var link = document.getElementById('karte-link');
+      var ua = navigator.userAgent;
+      var lat = '48.82973', lon = '10.10887';
+      var name = encodeURIComponent('Kanzlei Korting, Ulmer Straße 124, 73431 Aalen');
+      if (/iPhone|iPad|iPod|Macintosh/.test(ua) && 'ontouchend' in document) {
+        link.href = 'https://maps.apple.com/?ll=' + lat + ',' + lon + '&q=' + name;
+      } else if (/Android/.test(ua)) {
+        link.href = 'geo:' + lat + ',' + lon + '?q=' + lat + ',' + lon + '(' + name + ')';
+        link.removeAttribute('target');
+      }
+    })();
+  </script>
 
 </body>
 </html>
