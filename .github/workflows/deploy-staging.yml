@@ -1,0 +1,37 @@
+name: Deploy Staging
+
+# Automatisch bei jedem Push/Merge auf den Branch "staging"
+on:
+  push:
+    branches: [staging]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://container.ga-cms.de
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install paramiko
+
+      - name: Zugangsdaten bereitstellen
+        run: |
+          printf '%s\n' "${{ secrets.STAGING_SSH_KEY }}" > "$RUNNER_TEMP/deploy_key"
+          chmod 600 "$RUNNER_TEMP/deploy_key"
+          printf '%s\n' "${{ secrets.STAGING_KNOWN_HOSTS }}" > "$RUNNER_TEMP/known_hosts"
+
+      - name: Deploy nach container.ga-cms.de
+        env:
+          DEPLOY_KEY_FILE: ${{ runner.temp }}/deploy_key
+          DEPLOY_KNOWN_HOSTS: ${{ runner.temp }}/known_hosts
+        run: python deploy.py staging
