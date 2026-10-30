@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-prod
+  group: production
   cancel-in-progress: false
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://www.anwaelte-aalen.de
+      url: https://www.anwaelte-aalen.de/
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +26,13 @@ jobs:
       - run: pip install paramiko
 
       - name: Known Hosts bereitstellen
-        run: printf '%s\n' "${{ secrets.PROD_KNOWN_HOSTS }}" > "$RUNNER_TEMP/known_hosts"
+        env:
+          KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
 
+      # deploy.py baut die Seite, prüft sie (keine Staging-URL, index/follow) und lädt hoch
       - name: Deploy nach www.anwaelte-aalen.de
         env:
           DEPLOY_PASSWORD: ${{ secrets.PROD_SFTP_PASSWORD }}
           DEPLOY_KNOWN_HOSTS: ${{ runner.temp }}/known_hosts
-        run: python deploy.py prod
+        run: python deploy.py

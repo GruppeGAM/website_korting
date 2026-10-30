@@ -5,33 +5,70 @@ on:
   push:
     branches: [staging]
 
-concurrency:
-  group: deploy-staging
-  cancel-in-progress: true
+# Nie zwei Staging-Deploys gleichzeitig
+concurrency: staging
+
+env:
+  TARGET: korting-deploy@container.ga-cms.de:/var/www/container.ga-cms.de/
+  STAGING_URL: https://container.ga-cms.de/
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://container.ga-cms.de
+      url: https://container.ga-cms.de/
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Build
+        run: ./build.sh _site
 
-      - run: pip install paramiko
-
-      - name: Zugangsdaten bereitstellen
-        run: |
-          printf '%s\n' "${{ secrets.STAGING_SSH_KEY }}" > "$RUNNER_TEMP/deploy_key"
-          chmod 600 "$RUNNER_TEMP/deploy_key"
-          printf '%s\n' "${{ secrets.STAGING_KNOWN_HOSTS }}" > "$RUNNER_TEMP/known_hosts"
-
-      - name: Deploy nach container.ga-cms.de
+      - name: SSH-Zugang bereitstellen
         env:
-          DEPLOY_KEY_FILE: ${{ runner.temp }}/deploy_key
-          DEPLOY_KNOWN_HOSTS: ${{ runner.temp }}/known_hosts
-        run: python deploy.py staging
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      # Server hat rsync 3.1.3: keine Optionen ab 3.2 (z. B. --mkpath) verwenden
+      - name: Deploy nach container.ga-cms.de
+        run: |
+          rsync -rltvz --delete --chmod=D755,F644 --exclude='.well-known/' \
+            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
+            _site/ "$TARGET"
+
+      - name: Smoke-Test
+        env:
+          AUTH_USER: ${{ secrets.STAGING_BASIC_AUTH_USER }}
+          AUTH_PASS: ${{ secrets.STAGING_BASIC_AUTH_PASS }}
+        run: |
+          fail=0
+          status() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$@"; }
+
+          code=$(status "$STAGING_URL")
+          echo "ohne Login: $STAGING_URL -> $code"
+          [ "$code" = 401 ] || { echo "::error::Erwartet 401 ohne Login, bekommen $code"; fail=1; }
+
+          if [ -n "$AUTH_USER" ] && [ -n "$AUTH_PASS" ]; then
+            # Zugangsdaten über Datei statt Kommandozeile, damit sie nirgends auftauchen
+            netrc="$RUNNER_TEMP/netrc"
+            ( umask 077; printf 'machine container.ga-cms.de login %s password %s\n' "$AUTH_USER" "$AUTH_PASS" > "$netrc" )
+            for path in "" impressum.html datenschutz.html styles.css; do
+              code=$(status --netrc-file "$netrc" "$STAGING_URL$path")
+              echo "mit Login:  $STAGING_URL$path -> $code"
+              [ "$code" = 200 ] || { echo "::error::Erwartet 200 für /$path, bekommen $code"; fail=1; }
+            done
+            # Prüfen, dass wirklich der neue Stand ausgeliefert wird
+            curl -s --max-time 20 --netrc-file "$netrc" "${STAGING_URL}index.html" | cmp -s - _site/index.html \
+              || { echo "::error::Ausgelieferte index.html entspricht nicht dem Build"; fail=1; }
+            curl -sI --max-time 20 --netrc-file "$netrc" "$STAGING_URL" | grep -qi '^x-robots-tag:.*noindex' \
+              || echo "::warning::Header X-Robots-Tag: noindex fehlt"
+            rm -f "$netrc"
+          else
+            echo "STAGING_BASIC_AUTH_USER/PASS nicht gesetzt, Test mit Login übersprungen."
+          fi
+          exit $fail

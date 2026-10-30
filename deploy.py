@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Deploy-Script: Löscht alte Dateien auf dem Server und lädt neue hoch.
+Deploy-Script für Production (www.anwaelte-aalen.de, IONOS):
+Baut die Seite (build.sh), prüft sie, löscht alte Dateien auf dem Server
+und lädt den Build hoch.
 
-Aufruf:
-    python deploy.py staging   -> container.ga-cms.de (SSH-Key oder Passwort)
-    python deploy.py prod      -> www.anwaelte-aalen.de (IONOS, Passwort)
+Staging wird per rsync aus GitHub Actions ausgeliefert, nicht über dieses Script.
 
 Zugangsdaten (optional, sonst interaktive Passwortabfrage):
     DEPLOY_PASSWORD     SFTP-Passwort
-    DEPLOY_KEY_FILE     Pfad zum privaten SSH-Key
     DEPLOY_KNOWN_HOSTS  Pfad zu einer known_hosts-Datei (Host-Key wird geprüft)
 """
 
@@ -17,29 +16,18 @@ import os
 import sys
 import getpass
 import stat
+import subprocess
 
+HOST = "home29819267.1and1-data.host"
+USER = "acc828869407"
 LOCAL_DIR = os.path.dirname(os.path.abspath(__file__))
+BUILD_DIR = os.path.join(LOCAL_DIR, "_site")
 
-TARGETS = {
-    "staging": {
-        "host": "container.ga-cms.de",
-        "user": "deploy",
-        # Achtung: Inhalt dieses Ordners wird komplett ersetzt!
-        "remote_dir": "/var/www/staging-korting",
-        "keep": set(),
-    },
-    "prod": {
-        "host": "home29819267.1and1-data.host",
-        "user": "acc828869407",
-        "remote_dir": ".",
-        # Dateien/Ordner die NICHT gelöscht werden
-        "keep": {".ssh", ".bash_history", ".htaccess", "logs"},
-    },
-}
+# Dateien/Ordner die NICHT gelöscht werden
+KEEP = {".ssh", ".bash_history", ".htaccess", "logs"}
 
-# Lokale Dateien die hochgeladen werden
-UPLOAD_FILES = ["index.html", "styles.css", "datenschutz.html", "impressum.html"]
-UPLOAD_DIRS = ["images"]
+PROD_URL = "https://www.anwaelte-aalen.de/"
+STAGING_HOST = "container.ga-cms.de"
 
 
 def sftp_rm_recursive(sftp, remote_path):
@@ -90,7 +78,32 @@ def sftp_upload_dir(sftp, local_path, remote_path):
             print(f"  Hochgeladen: {remote_item}")
 
 
-def check_host_key(transport, host):
+def build_and_check():
+    """Baut die Seite und stellt sicher, dass sie für Production taugt."""
+    subprocess.run([os.path.join(LOCAL_DIR, "build.sh"), BUILD_DIR], check=True)
+
+    errors = []
+    for root, _, files in os.walk(BUILD_DIR):
+        for fname in files:
+            if not fname.endswith((".html", ".css")):
+                continue
+            path = os.path.join(root, fname)
+            with open(path, encoding="utf-8") as f:
+                if STAGING_HOST in f.read():
+                    errors.append(f"{os.path.relpath(path, BUILD_DIR)} enthält {STAGING_HOST}")
+
+    with open(os.path.join(BUILD_DIR, "index.html"), encoding="utf-8") as f:
+        index = f.read()
+    for needle in ('content="index, follow"', f'og:url" content="{PROD_URL}"'):
+        if needle not in index:
+            errors.append(f"index.html: {needle} fehlt")
+
+    if errors:
+        sys.exit("FEHLER: Build ist nicht für Production geeignet:\n  " + "\n  ".join(errors))
+    print("  Build-Prüfung OK")
+
+
+def check_host_key(transport):
     """Prüft den Host-Key gegen DEPLOY_KNOWN_HOSTS, falls gesetzt."""
     known_hosts = os.environ.get("DEPLOY_KNOWN_HOSTS")
     if not known_hosts:
@@ -98,43 +111,28 @@ def check_host_key(transport, host):
         return
     keys = paramiko.HostKeys(known_hosts)
     server_key = transport.get_remote_server_key()
-    expected = keys.lookup(host)
+    expected = keys.lookup(HOST)
     if not expected or expected.get(server_key.get_name()) != server_key:
-        sys.exit(f"FEHLER: Host-Key von {host} stimmt nicht mit {known_hosts} überein!")
-
-
-def connect(cfg):
-    host, user = cfg["host"], cfg["user"]
-    transport = paramiko.Transport((host, 22))
-    transport.start_client()
-    check_host_key(transport, host)
-
-    key_file = os.environ.get("DEPLOY_KEY_FILE")
-    if key_file:
-        transport.auth_publickey(user, paramiko.Ed25519Key.from_private_key_file(key_file))
-    else:
-        password = os.environ.get("DEPLOY_PASSWORD") or getpass.getpass(
-            f"SFTP-Passwort für {user}@{host}: "
-        )
-        transport.auth_password(user, password)
-    return transport
+        sys.exit(f"FEHLER: Host-Key von {HOST} stimmt nicht mit {known_hosts} überein!")
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in TARGETS:
-        sys.exit(f"Aufruf: python {sys.argv[0]} {'|'.join(TARGETS)}")
-    target = sys.argv[1]
-    cfg = TARGETS[target]
-    print(f"=== Deploy nach {target} ({cfg['user']}@{cfg['host']}:{cfg['remote_dir']}) ===")
+    print("=== Schritt 0: Build erstellen und prüfen ===")
+    build_and_check()
 
-    transport = connect(cfg)
+    transport = paramiko.Transport((HOST, 22))
+    transport.start_client()
+    check_host_key(transport)
+    password = os.environ.get("DEPLOY_PASSWORD") or getpass.getpass(
+        f"SFTP-Passwort für {USER}@{HOST}: "
+    )
+    transport.auth_password(USER, password)
     sftp = paramiko.SFTPClient.from_transport(transport)
-    sftp.chdir(cfg["remote_dir"])
 
     print("\n=== Schritt 1: Alte Dateien/Ordner löschen ===")
     items = sftp.listdir_attr(".")
     for item in items:
-        if item.filename in cfg["keep"] or item.filename.startswith("."):
+        if item.filename in KEEP or item.filename.startswith("."):
             print(f"  Behalten: {item.filename}")
             continue
         if stat.S_ISDIR(item.st_mode):
@@ -152,28 +150,16 @@ def main():
                 print(f"  WARNUNG Datei: {item.filename} -> {e}")
 
     print("\n=== Schritt 2: Neue Dateien hochladen ===")
-    missing = False
-    for fname in UPLOAD_FILES:
-        local = os.path.join(LOCAL_DIR, fname)
-        if os.path.exists(local):
-            sftp.put(local, fname)
-            print(f"  Hochgeladen: {fname}")
-        else:
-            print(f"  FEHLER: {fname} nicht gefunden!")
-            missing = True
-
-    for dname in UPLOAD_DIRS:
-        local = os.path.join(LOCAL_DIR, dname)
+    for item in os.listdir(BUILD_DIR):
+        local = os.path.join(BUILD_DIR, item)
         if os.path.isdir(local):
-            sftp_upload_dir(sftp, local, dname)
+            sftp_upload_dir(sftp, local, item)
         else:
-            print(f"  FEHLER: Ordner {dname} nicht gefunden!")
-            missing = True
+            sftp.put(local, item)
+            print(f"  Hochgeladen: {item}")
 
     sftp.close()
     transport.close()
-    if missing:
-        sys.exit("\n=== Fertig, aber mit Fehlern (siehe oben). ===")
     print("\n=== Fertig! Alle Dateien wurden erfolgreich übertragen. ===")
 
 
