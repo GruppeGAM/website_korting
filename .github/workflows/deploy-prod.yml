@@ -28,7 +28,38 @@ jobs:
       - name: Known Hosts bereitstellen
         env:
           KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
-        run: printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+        run: |
+          # Windows-Zeilenenden und Leerzeichen am Zeilenrand entfernen (häufig beim Einfügen)
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$RUNNER_TEMP/known_hosts"
+
+      # Host-Keys müssen zu den bekannten Fingerabdrücken des IONOS-Servers passen
+      - name: Known Hosts prüfen
+        env:
+          HAS_PASSWORD: ${{ secrets.PROD_SFTP_PASSWORD != '' }}
+        run: |
+          expected="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q
+          SHA256:J4oM+B2g7zZWAI3DolXR1e4vdIMrGO301kEN14/slsQ
+          SHA256:psLDE8kfhoS9GWrc/GTrdlPvyKPcWcGZv2JxOCvwF3w"
+          kh="$RUNNER_TEMP/known_hosts"
+          lines=$(grep -c . "$kh" || true)
+          found=$(ssh-keygen -lf "$kh" 2>/dev/null || true)
+          if [ -z "$found" ]; then
+            echo "::error::PROD_KNOWN_HOSTS enthält keinen gültigen Host-Key ($lines Zeilen). Erwartet werden die drei Zeilen aus prod_known_hosts, nicht die SHA256-Fingerabdrücke."
+            exit 1
+          fi
+          echo "::notice::PROD_KNOWN_HOSTS: $(echo "$found" | awk '{print $NF, $2, $3}' | paste -sd ';' -)"
+          if ! ssh-keygen -F home29819267.1and1-data.host -f "$kh" >/dev/null; then
+            echo "::error::PROD_KNOWN_HOSTS enthält keinen Eintrag für den Host 'home29819267.1and1-data.host'."
+            exit 1
+          fi
+          for fp in $expected; do
+            echo "$found" | grep -qF "$fp" || { echo "::error::Fingerabdruck $fp fehlt in PROD_KNOWN_HOSTS."; exit 1; }
+          done
+          if [ "$HAS_PASSWORD" != "true" ]; then
+            echo "::error::Secret PROD_SFTP_PASSWORD fehlt im Environment production."
+            exit 1
+          fi
+          echo "Host-Keys OK"
 
       # deploy.py baut die Seite, prüft sie (keine Staging-URL, index/follow) und lädt hoch
       - name: Deploy nach www.anwaelte-aalen.de
